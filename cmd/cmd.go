@@ -21,7 +21,7 @@ import (
 )
 
 var AppVer string
-
+// 配置初始化
 func setup(ctx *cli.Context) {
 	log.Info("App Version: %s", AppVer)
 	setting.InitSetting()

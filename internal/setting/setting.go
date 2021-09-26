@@ -26,6 +26,7 @@ import (
 )
 
 func init() {
+	// 日志前缀, 时间格式
 	log.Prefix = "[Bra]"
 	log.TimeFormat = "01-02 15:04:05"
 }
@@ -36,34 +37,37 @@ var (
 
 var Cfg struct {
 	Run struct {
-		InitCmds         [][]string       `toml:"init_cmds"`
-		WatchAll         bool             `toml:"watch_all"`
-		WatchDirs        []string         `toml:"watch_dirs"`
-		WatchExts        []string         `toml:"watch_exts"`
-		IgnoreDirs       []string         `toml:"ignore"`
-		IgnoreFiles      []string         `toml:"ignore_files"`
-		EnvFiles         []string         `toml:"env_files"`
-		IgnoreRegexps    []*regexp.Regexp `toml:"-"`
-		FollowSymlinks   bool             `toml:"follow_symlinks"`
-		BuildDelay       int              `toml:"build_delay"`
-		InterruptTimeout int              `toml:"interrupt_timout"`
-		GracefulKill     bool             `toml:"graceful_kill"`
-		Cmds             [][]string       `toml:"cmds"`
+		InitCmds         [][]string       `toml:"init_cmds"`        // init命令
+		WatchAll         bool             `toml:"watch_all"`        // 是否监控所有
+		WatchDirs        []string         `toml:"watch_dirs"`       // 监控目录列表
+		WatchExts        []string         `toml:"watch_exts"`       // 监控文件文件后缀
+		IgnoreDirs       []string         `toml:"ignore"`           // 不需要监控目录
+		IgnoreFiles      []string         `toml:"ignore_files"`     // 不需要监控文件
+		EnvFiles         []string         `toml:"env_files"`        // 环境变量文件
+		IgnoreRegexps    []*regexp.Regexp `toml:"-"`                // 不需要监控 支持正则
+		FollowSymlinks   bool             `toml:"follow_symlinks"`  // 跟踪链接
+		BuildDelay       int              `toml:"build_delay"`      // 延迟构建
+		InterruptTimeout int              `toml:"interrupt_timout"` // 中断超时时间
+		GracefulKill     bool             `toml:"graceful_kill"`    // 优雅退出
+		Cmds             [][]string       `toml:"cmds"`             // 操作命令
 	} `toml:"run"`
 	Sync struct {
-		ListenAddr string `toml:"listen_addr"`
-		RemoteAddr string `toml:"remote_addr"`
+		ListenAddr string `toml:"listen_addr"`                      // 监控地址
+		RemoteAddr string `toml:"remote_addr"`                      // 远程监控地址
 	} `toml:"sync"`
 }
 
 // UnpackPath replaces special path variables and returns full path.
+// 替换变量生成完整路径
 func UnpackPath(path string) string {
 	path = strings.Replace(path, "$WORKDIR", WorkDir, 1)
+	// 还要设置GOPATH
 	path = strings.Replace(path, "$GOPATH", com.GetGOPATHs()[0], 1)
 	return path
 }
 
 // IgnoreDir determines whether specified dir must be ignored.
+// 要忽略目录
 func IgnoreDir(dir string) bool {
 	for _, s := range Cfg.Run.IgnoreDirs {
 		if strings.Contains(dir, s) {
@@ -85,11 +89,14 @@ func IgnoreFile(file string) bool {
 
 func InitSetting() {
 	var err error
+	// 工作目录
 	WorkDir, err = os.Getwd()
 	if err != nil {
 		log.Fatal("Fail to get work directory: %v", err)
 	}
 
+	// 配置文件不存在退出
+	// 存在则解析配置
 	confPath := path.Join(WorkDir, ".bra.toml")
 	if !com.IsFile(confPath) {
 		log.Fatal(".bra.toml not found in work directory")
@@ -97,11 +104,13 @@ func InitSetting() {
 		log.Fatal("Fail to decode .bra.toml: %v", err)
 	}
 
+	// 中断超时时间，如果为0，则设置为15
 	if Cfg.Run.InterruptTimeout == 0 {
 		Cfg.Run.InterruptTimeout = 15
 	}
 
 	// Init default ignore lists.
+	// 忽略.git
 	Cfg.Run.IgnoreDirs = com.AppendStr(Cfg.Run.IgnoreDirs, ".git")
 	Cfg.Run.IgnoreRegexps = make([]*regexp.Regexp, len(Cfg.Run.IgnoreFiles))
 	for i, regStr := range Cfg.Run.IgnoreFiles {

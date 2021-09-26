@@ -30,6 +30,7 @@ func init() {
 	cmd.AppVer = version
 }
 
+// 这里用main,下载时候会执行生成bra可执行文件
 func main() {
 	app := &cli.App{
 		Name:  "Bra",

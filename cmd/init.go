@@ -30,6 +30,7 @@ import (
 	"github.com/unknwon/bra/internal/bindata"
 )
 
+// Init 初始化模板
 var Init = cli.Command{
 	Name:   "init",
 	Usage:  "initialize config template file",
@@ -38,6 +39,9 @@ var Init = cli.Command{
 }
 
 func runInit(ctx *cli.Context) error {
+
+	// 如果.bra.toml配置文件存在，
+	// 提示是否覆盖
 	if com.IsExist(".bra.toml") {
 		fmt.Print("There is a .bra.toml in the work directory, do you want to overwrite?(y/n): ")
 		var answer string
@@ -48,11 +52,13 @@ func runInit(ctx *cli.Context) error {
 		}
 	}
 
+	// 当前目录
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Fatal("Fail to get work directory: %v", err)
 	}
 
+	// 获取默认模板资源
 	data, err := bindata.Asset("templates/default.bra.toml")
 	if err != nil {
 		log.Fatal("Fail to get asset: %v", err)
@@ -63,6 +69,7 @@ func runInit(ctx *cli.Context) error {
 		appName += ".exe"
 	}
 
+	// 替换应用名，生成新的配置文件
 	data = bytes.Replace(data, []byte("$APP_NAME"), []byte(appName), -1)
 	if err := ioutil.WriteFile(".bra.toml", data, os.ModePerm); err != nil {
 		log.Fatal("Fail to generate default .bra.toml: %v", err)
